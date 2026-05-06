@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Fake News Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-3d.js"></script>
+
+    <style>
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .section-header { border-bottom: 2px solid var(--bs-border-color); padding-bottom: 8px; margin-top: 30px; margin-bottom: 20px; font-weight: bold;}
+        .action-btn { cursor: pointer; transition: 0.2s; }
+        .action-btn:hover { color: var(--bs-primary); }
+        .highcharts-text-outline { stroke: none !important; fill: white !important; }
+        
+        .fab-post { position: fixed; bottom: 30px; right: 30px; z-index: 1040; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: transform 0.2s; }
+        .fab-post:hover { transform: scale(1.1); }
+        
+        i.fas, i.far, i.fab { text-shadow: 1px 1px 0px rgba(255,255,255,0.1), 1px 2px 3px rgba(0,0,0,0.4), 1px 3px 5px rgba(0,0,0,0.3); transition: transform 0.2s ease, text-shadow 0.2s ease; display: inline-block; }
+        i.fas:hover, i.far:hover, i.fab:hover { transform: translateY(-2px) scale(1.15); text-shadow: 1px 1px 0px rgba(255,255,255,0.2), 2px 4px 5px rgba(0,0,0,0.5), 2px 6px 8px rgba(0,0,0,0.4); }
+
+        .was-validated .form-control:invalid { border-color: #dc3545 !important; background-image: none; box-shadow: 0 0 8px rgba(220, 53, 69, 0.4); }
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 1060; }
+
+        .orbital-loader { width: 70px; height: 70px; margin: 0 auto; position: relative; transform-style: preserve-3d; perspective: 500px; }
+        .orbital-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 3px solid transparent; border-top-color: #0d6efd; border-right-color: rgba(13, 110, 253, 0.4); box-shadow: 0 0 20px rgba(13,110,253,0.3); }
+        .ring1 { animation: spinOrbit1 1.5s ease-in-out infinite; }
+        .ring2 { border-top-color: #198754; border-bottom-color: rgba(25, 135, 84, 0.4); border-right-color: transparent; animation: spinOrbit2 2s ease-in-out infinite; }
+        .ring3 { border-top-color: #dc3545; border-left-color: rgba(220, 53, 69, 0.4); border-right-color: transparent; animation: spinOrbit3 2.5s ease-in-out infinite; }
+        .orbital-core { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #0d6efd; border-radius: 50%; box-shadow: 0 0 15px #0d6efd, 0 0 30px #0d6efd; animation: pulseCore 1.5s ease-in-out infinite; }
+        @keyframes spinOrbit1 { 0% { transform: rotateX(65deg) rotateY(0deg) rotateZ(0deg); } 100% { transform: rotateX(65deg) rotateY(360deg) rotateZ(360deg); } }
+        @keyframes spinOrbit2 { 0% { transform: rotateX(45deg) rotateY(90deg) rotateZ(0deg); } 100% { transform: rotateX(45deg) rotateY(90deg) rotateZ(360deg); } }
+        @keyframes spinOrbit3 { 0% { transform: rotateX(75deg) rotateY(-45deg) rotateZ(0deg); } 100% { transform: rotateX(75deg) rotateY(-45deg) rotateZ(360deg); } }
+        @keyframes pulseCore { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; } 50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } }
+
+        /* 3D SIDEBAR MENU ICONS & GRADIENTS */
+        .menu-icon-box {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: inline-flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3);
+            font-size: 16px; flex-shrink: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .bg-gradient-red { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
+        .bg-gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .bg-gradient-dark { background: linear-gradient(135deg, #434343 0%, #000000 100%); }
+        .bg-gradient-yellow { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .bg-gradient-purple { background: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%); }
+        .bg-gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .bg-gradient-orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .bg-gradient-teal { background: linear-gradient(135deg, #17ead9 0%, #6078ea 100%); }
+        .bg-gradient-indigo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .bg-gradient-cyan { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
+
+        .menu-btn {
+            background-color: var(--bs-tertiary-bg);
+            border: 1px solid var(--bs-border-color);
+            display: flex; align-items: center; padding: 12px 15px; border-radius: 12px;
+            transition: all 0.2s ease; color: var(--bs-body-color);
+        }
+        .menu-btn:hover {
+            transform: translateY(-2px) scale(1.01);
+            background-color: var(--bs-secondary-bg);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+            border-color: var(--bs-primary);
+        }
+        .menu-item-card {
+            background-color: var(--bs-tertiary-bg);
+            border: 1px solid var(--bs-border-color);
+        }
+    </style>
+</head>
+<body class="bg-body text-body" id="appBody">
+
+    <div id="toastContainer"></div>
+
+    <nav class="navbar navbar-expand-lg border-bottom bg-body-tertiary shadow-sm">
+        <div class="container-fluid px-4">
+            <button class="btn btn-outline-secondary me-3 border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fas fa-bars fs-4"></i></button>
+            <a class="navbar-brand fs-4 fw-bold" href="#" data-i18n="title">Fake <span class="text-primary fw-normal">News</span> Detector</a>
+            <div class="collapse navbar-collapse" id="topNavBar">
+                <div class="position-relative mx-auto w-50 my-2 my-lg-0">
+                    <form class="d-flex" onsubmit="executeSearch(event)">
+                        <div class="input-group">
+                            <button class="btn btn-secondary border-0" type="submit"><i class="fas fa-search"></i></button>
+                            <input id="searchInput" class="form-control bg-body-secondary border-0 shadow-none" type="search" placeholder="Search news, topics, or paste text..." autocomplete="off" oninput="fetchSuggestions(this.value)">
+                        </div>
+                    </form>
+                    <ul id="searchSuggestions" class="list-group position-absolute w-100 d-none shadow-lg mt-1" style="z-index: 1050; max-height: 300px; overflow-y: auto;"></ul>
+                </div>
+                <ul class="navbar-nav align-items-center gap-3">
+                    <li class="nav-item ms-2"><span id="liveClock" class="text-muted fw-bold" style="font-size: 0.85rem; font-family: monospace;">Loading Time...</span></li>
+                    <li class="nav-item"><button class="btn btn-outline-secondary border-0" onclick="toggleTheme()" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button></li>
+                    <li class="nav-item" id="navAuthSection">
+                        <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#authModal"><i class="fas fa-sign-in-alt me-1"></i> <span data-i18n="login">Login / Register</span></button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-start bg-body" tabindex="-1" id="sidebarMenu">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold" data-i18n="menu">Menu</h5>
+            <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-4">
+            
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="menu-icon-box bg-gradient-red me-3"><i class="fas fa-map-marker-alt text-white"></i></div>
+                    <label class="form-label text-muted fw-bold mb-0" data-i18n="region">Region</label>
+                </div>
+                <select class="form-select bg-body-tertiary border-secondary shadow-none rounded-3 py-2" id="sidebarCountry" onchange="selectCountry(this.value)">
+                    <option value="au">Australia</option><option value="br">Brazil</option><option value="ca">Canada</option><option value="cn">China</option><option value="eg">Egypt</option><option value="fr">France</option><option value="de">Germany</option><option value="gr">Greece</option><option value="hk">Hong Kong</option><option value="in" selected>India</option><option value="ie">Ireland</option><option value="il">Israel</option><option value="it">Italy</option><option value="jp">Japan</option><option value="nl">Netherlands</option><option value="no">Norway</option><option value="pk">Pakistan</option><option value="pe">Peru</option><option value="ph">Philippines</option><option value="pt">Portugal</option><option value="ro">Romania</option><option value="ru">Russia</option><option value="sg">Singapore</option><option value="es">Spain</option><option value="se">Sweden</option><option value="ch">Switzerland</option><option value="tw">Taiwan</option><option value="ua">Ukraine</option><option value="gb">United Kingdom</option><option value="us">United States</option>
+                </select>
+            </div>
+
+            <div class="mb-4 pb-4 border-bottom border-secondary">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="menu-icon-box bg-gradient-blue me-3"><i class="fas fa-globe text-white"></i></div>
+                    <label class="form-label text-muted fw-bold mb-0" data-i18n="language">Language</label>
+                </div>
+                <select class="form-select bg-body-tertiary border-secondary shadow-none rounded-3 py-2" id="sidebarLang" onchange="selectLang(this.value)">
+                    <option value="ar">Arabic</option><option value="zh">Chinese</option><option value="nl">Dutch</option><option value="en" selected>English</option><option value="fr">French</option><option value="de">German</option><option value="el">Greek</option><option value="gu">Gujarati</option><option value="he">Hebrew</option><option value="hi">Hindi</option><option value="it">Italian</option><option value="ja">Japanese</option><option value="ml">Malayalam</option><option value="mr">Marathi</option><option value="no">Norwegian</option><option value="pt">Portuguese</option><option value="ro">Romanian</option><option value="ru">Russian</option><option value="es">Spanish</option><option value="sv">Swedish</option><option value="ta">Tamil</option><option value="te">Telugu</option><option value="uk">Ukrainian</option>
+                </select>
+            </div>
+
+            <div class="d-flex align-items-center mt-4 mb-4">
+                <div class="menu-icon-box bg-gradient-dark me-3"><i class="fas fa-cog text-white"></i></div>
+                <h6 class="text-muted fw-bold mb-0" data-i18n="settings">Settings</h6>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 menu-item-card p-2 px-3 rounded-4 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="menu-icon-box bg-gradient-yellow me-3"><i class="fas fa-bell text-white"></i></div>
+                    <span data-i18n="notif" class="fw-bold">Notifications</span>
+                </div>
+                <div class="form-check form-switch m-0"><input class="form-check-input shadow-none fs-4 m-0" type="checkbox" checked></div>
+            </div>
+
+            <div class="mb-4 pb-4 border-bottom border-secondary">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="menu-icon-box bg-gradient-purple me-3"><i class="fas fa-font text-white"></i></div>
+                    <label class="form-label text-muted fw-bold mb-0" data-i18n="font">Font Size</label>
+                </div>
+                <select class="form-select bg-body-tertiary border-secondary shadow-none rounded-3 py-2" id="sidebarFont" onchange="changeFontSize(this.value)">
+                    <option value="small">Small</option><option value="medium" selected>Medium (Default)</option><option value="large">Large</option>
+                </select>
+            </div>
+
+            <div class="d-flex flex-column gap-3 mt-4">
+                <button class="btn menu-btn w-100 text-start shadow-sm" onclick="fetchSavedArticles()">
+                    <div class="menu-icon-box bg-gradient-green me-3"><i class="fas fa-bookmark text-white"></i></div>
+                    <span data-i18n="saved" class="fw-bold fs-6">Saved</span>
+                </button>
+
+                <button class="btn menu-btn w-100 text-start shadow-sm" onclick="fetchMyPosts()">
+                    <div class="menu-icon-box bg-gradient-orange me-3"><i class="fas fa-newspaper text-white"></i></div>
+                    <span data-i18n="myPosts" class="fw-bold fs-6">My Posts</span>
+                </button>
+
+                <button class="btn menu-btn w-100 text-start shadow-sm" onclick="fetchAnalysisHistory()">
+                    <div class="menu-icon-box bg-gradient-teal me-3"><i class="fas fa-history text-white"></i></div>
+                    <span data-i18n="history" class="fw-bold fs-6">Analysis History</span>
+                </button>
+
+                <button id="adminSystemUsersBtn" class="btn menu-btn w-100 text-start shadow-sm d-none" onclick="viewSystemUsers()">
+                    <div class="menu-icon-box bg-gradient-indigo me-3"><i class="fas fa-users text-white"></i></div>
+                    <span data-i18n="systemUsers" class="fw-bold fs-6">System Users</span>
+                </button>
+
+                <button class="btn menu-btn w-100 text-start shadow-sm mt-3" onclick="showAboutUs()">
+                    <div class="menu-icon-box bg-gradient-cyan me-3"><i class="fas fa-info-circle text-white"></i></div>
+                    <span data-i18n="aboutUs" class="fw-bold fs-6">About Us</span>
+                </button>
+            </div>
+
+            <div style="height: 150px;"></div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex overflow-auto gap-3 align-items-center hide-scroll" style="white-space: nowrap;">
+                <button class="btn btn-sm btn-primary active category-btn rounded-pill px-3 fw-bold" onclick="loadNews('home', this)" data-i18n="home">Home</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('briefing', this)" data-i18n="briefing">Your briefing</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('for-you', this)" data-i18n="forYou">For you</button>
+                <div class="vr mx-1 bg-secondary" style="height: 20px;"></div>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('business', this)" data-i18n="business">Business</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('economy', this)" data-i18n="economy">Economy</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('technology', this)" data-i18n="tech">Technology</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('science', this)" data-i18n="science">Science</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('politics', this)" data-i18n="politics">Politics</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('education', this)" data-i18n="education">Education</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('entertainment', this)" data-i18n="entertainment">Entertainment</button>
+                <button class="btn btn-sm btn-outline-secondary category-btn rounded-pill px-3" onclick="loadNews('sports', this)" data-i18n="sports">Sports</button>
+            </div>
+        </div>
+
+        <div id="resultSection" class="mt-4 mb-5 d-none card bg-body-tertiary shadow-lg border-0 rounded-4">
+            <div class="card-body p-4">
+                <h3 class="mb-2 text-center"><span data-i18n="factCheck">Fact Checking:</span> <span id="resultLabel"></span></h3>
+                <p class="text-center text-muted fst-italic border-bottom pb-3 mb-4" id="verifiedHeadlineDisplay" style="font-size: 1.1rem;"></p>
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-6 text-center border-end"><div id="predictionPieChart" style="height: 320px; width: 100%; filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.5)); cursor: grab;"></div></div>
+                    <div class="col-md-6 text-center"><div id="predictionLineChart" style="height: 320px; width: 100%; filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.4));"></div></div>
+                </div>
+                <div class="row border-top pt-4">
+                    <div class="col-12 px-5 text-center">
+                        <h5 class="mb-4 text-muted"><i class="fas fa-server me-2"></i><span data-i18n="dataMetrics">Data Metrics</span></h5>
+                        <div class="d-flex justify-content-center gap-5 mb-4">
+                            <div class="w-50 text-start"><p class="mb-1 fw-bold"><span data-i18n="authProb">Authenticity Probability:</span> <span id="realScore"></span>%</p><div class="progress mb-4 bg-secondary" style="height: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);"><div id="realBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar"></div></div></div>
+                            <div class="w-50 text-start"><p class="mb-1 fw-bold"><span data-i18n="fabProb">Fabrication Probability:</span> <span id="fakeScore"></span>%</p><div class="progress bg-secondary" style="height: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);"><div id="fakeBar" class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar"></div></div></div>
+                        </div>
+                        <button id="btnWhy" class="btn rounded-pill fw-bold px-5 mt-2 shadow" onclick="explainPrediction()"><i class="fas fa-question-circle me-2"></i><span data-i18n="why">Why?</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="newsGrid"></div>
+    </div>
+
+    <input type="hidden" id="newsInput">
+
+    <button class="btn btn-success fab-post" onclick="checkLoginBeforePosting()"><i class="fas fa-pen"></i></button>
+
+    <div class="modal fade" id="authModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold" id="authModalLabel">Login Account</h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <div id="authAlert" class="alert d-none small fw-bold" role="alert"></div>
+                    
+                    <form id="signInForm" class="needs-validation" novalidate>
+                        <p class="text-muted small mb-4">Please enter your credentials to proceed.</p>
+                        <div class="mb-3"><label class="form-label fw-bold">Email</label><input type="email" id="loginEmail" class="form-control bg-body-secondary border-0 shadow-none py-2" style="text-transform: lowercase;" oninput="this.value = this.value.toLowerCase()" required><div class="invalid-feedback">Valid email required.</div></div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password</label>
+                            <div class="input-group has-validation">
+                                <input type="password" id="loginPassword" class="form-control bg-body-secondary border-0 shadow-none py-2" required>
+                                <button class="btn bg-body-secondary border-0 text-muted px-3" type="button" onclick="togglePasswordVisibility('loginPassword', this)"><i class="fas fa-eye"></i></button>
+                                <div class="invalid-feedback">Password is required.</div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-light text-dark w-100 rounded-pill fw-bold py-2 mb-3" onclick="validateAndSubmit(this.form)"><i class="fas fa-sign-in-alt me-2"></i>Login</button>
+                        <div class="text-center mt-3 mb-2"><span class="text-muted">Don't Have an Account?</span></div>
+                        <button type="button" class="btn btn-outline-light w-100 rounded-pill fw-bold py-2" onclick="toggleAuthMode('signup')">Create Account</button>
+                    </form>
+
+                    <form id="signUpForm" class="needs-validation d-none" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold">First Name</label>
+                                <input type="text" id="regFirstName" class="form-control bg-body-secondary border-0 shadow-none py-2" minlength="5" maxlength="30" required>
+                                <div class="invalid-feedback" style="font-size: 0.75rem;">5-30 chars required.</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">Last Name</label>
+                                <input type="text" id="regLastName" class="form-control bg-body-secondary border-0 shadow-none py-2" minlength="5" maxlength="30" required>
+                                <div class="invalid-feedback" style="font-size: 0.75rem;">5-30 chars required.</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" id="regEmail" class="form-control bg-body-secondary border-0 shadow-none py-2" style="text-transform: lowercase;" oninput="this.value = this.value.toLowerCase()" required>
+                            <div class="invalid-feedback" style="font-size: 0.75rem;">Valid email required.</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Password</label>
+                            <div class="input-group has-validation">
+                                <input type="password" id="regPassword" class="form-control bg-body-secondary border-0 shadow-none py-2" required pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}" minlength="8" maxlength="20">
+                                <button class="btn bg-body-secondary border-0 text-muted px-3" type="button" onclick="togglePasswordVisibility('regPassword', this)"><i class="fas fa-eye"></i></button>
+                                <div class="invalid-feedback" style="font-size: 0.75rem;">Must be 8-20 chars. Include an uppercase, lowercase, number, & special character.</div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-light text-dark w-100 rounded-pill fw-bold py-2 mb-3" onclick="validateAndSubmit(this.form)"><i class="fas fa-user-plus me-2"></i>Register</button>
+                        <div class="text-center mt-3 mb-2"><span class="text-muted">Already have an Account?</span></div>
+                        <button type="button" class="btn btn-outline-light w-100 rounded-pill fw-bold py-2" onclick="toggleAuthMode('signin')">Login Account</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold"><i class="fas fa-user-circle text-primary me-2"></i><span data-i18n="myProfile">My Profile</span></h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4 text-center">
+                    <div id="profileViewMode">
+                        <div class="mb-4"><div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center text-white shadow" style="width: 80px; height: 80px; font-size: 30px;"><i class="fas fa-user text-light" style="text-shadow: none; transform: none;"></i></div></div>
+                        <h4 class="fw-bold mb-1" id="profileNameDisplay">Loading...</h4><p class="text-muted mb-3" id="profileEmailDisplay">loading@email.com</p>
+                        <p class="small text-muted mb-4"><span data-i18n="memberSince">Member Since:</span> <span id="profileJoinedDisplay">...</span></p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary rounded-pill fw-bold" onclick="toggleProfileEdit()"><i class="fas fa-user-edit me-2"></i><span data-i18n="editProfile">Edit Profile</span></button>
+                            <button class="btn btn-outline-secondary rounded-pill fw-bold mt-2" onclick="logoutUser()"><i class="fas fa-sign-out-alt me-2"></i><span data-i18n="logOut">Log Out</span></button>
+                            <button class="btn btn-danger rounded-pill fw-bold mt-4" onclick="initiateAccountDeletion()"><i class="fas fa-trash me-2"></i><span data-i18n="deleteAccount">Delete Account</span></button>
+                        </div>
+                    </div>
+                    <div id="profileEditMode" class="d-none text-start">
+                        <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-tools me-2 text-primary"></i><span data-i18n="updateInfo">Update Information</span></h6>
+                        <form id="editProfileForm" class="needs-validation" novalidate>
+                            <div class="mb-3"><label class="form-label fw-bold small" data-i18n="fullName">Full Name</label><input type="text" id="editProfileName" class="form-control bg-body-secondary border-0 shadow-none py-2" required></div>
+                            <div class="mb-3"><label class="form-label fw-bold small" data-i18n="emailAddress">Email Address</label><input type="email" id="editProfileEmail" class="form-control bg-body-secondary border-0 shadow-none py-2" style="text-transform: lowercase;" oninput="this.value = this.value.toLowerCase()" required></div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small"><span data-i18n="newPassword">New Password</span> <span class="text-muted fw-normal">(Leave blank to keep current)</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="editProfilePassword" class="form-control bg-body-secondary border-0 shadow-none py-2" placeholder="••••••••••••">
+                                    <button class="btn bg-body-secondary border-0 text-muted px-3" type="button" onclick="togglePasswordVisibility('editProfilePassword', this)"><i class="fas fa-eye"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-danger rounded-pill fw-bold w-50" onclick="toggleProfileEdit()"><i class="fas fa-times me-1"></i><span data-i18n="cancel">Cancel</span></button>
+                                <button type="button" class="btn btn-success rounded-pill fw-bold w-50" onclick="submitProfileEdit(this.form)"><i class="fas fa-save me-1"></i><span data-i18n="save">Save</span></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom border-danger"><h5 class="modal-title fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Delete Account</h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4 text-center" id="deleteAccountStep1">
+                    <p class="text-muted">This action is permanent. We will send a 6-digit verification code to your registered email to confirm.</p>
+                    <button class="btn btn-warning w-100 rounded-pill fw-bold text-dark mt-2" onclick="requestDeleteCode()">Send Verification Code</button>
+                </div>
+                <div class="modal-body p-4 text-center d-none" id="deleteAccountStep2">
+                    <p class="text-muted">Enter the 6-digit code sent to your email.</p>
+                    <input type="text" id="deleteAccountInput" class="form-control bg-body-secondary border-0 shadow-none text-center mb-3 fw-bold fs-4" placeholder="••••••" maxlength="6">
+                    <button class="btn btn-danger w-100 rounded-pill fw-bold mb-3" onclick="executeDeleteAccount()">Permanently Delete Account</button>
+                    <button class="btn btn-outline-warning w-100 rounded-pill fw-bold" onclick="requestDeleteCode()"><i class="fas fa-redo me-2"></i>Resend Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deletePostModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-trash-alt text-danger fa-3x mb-3"></i>
+                    <h5 class="fw-bold mb-3">Delete Post?</h5>
+                    <p class="text-muted mb-4">Are you sure you want to permanently delete this news post?</p>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary w-50 rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-danger w-50 rounded-pill fw-bold" onclick="executeDeletePost()">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="postModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold"><i class="fas fa-pen-nib me-2"></i><span data-i18n="publishNews">Publish News</span></h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" data-i18n="headline">Headline</label>
+                        <input type="text" id="postHeadline" class="form-control bg-body-secondary border-0 shadow-none" placeholder="..." minlength="40" maxlength="100">
+                    </div>
+                    <div class="mb-4 mt-4">
+                        <label class="form-label fw-bold" data-i18n="content">Content</label>
+                        <textarea id="postContent" class="form-control bg-body-secondary border-0 shadow-none" rows="5" placeholder="..." minlength="500" maxlength="3000"></textarea>
+                    </div>
+                    <div class="mb-4 mt-4"><label class="form-label fw-bold"><i class="fas fa-image me-2"></i><span data-i18n="attachImage">Attach Image</span></label><input type="file" id="postImageFile" accept="image/*" class="form-control bg-body-secondary border-0 shadow-none"></div>
+                    <button class="btn btn-success w-100 rounded-pill fw-bold shadow" onclick="submitPublishedNews()"><i class="fas fa-paper-plane me-2"></i><span data-i18n="publishArticle">Publish Article</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="commentsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold"><i class="fas fa-comments text-primary me-2"></i>Comments</h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4" id="commentsListBody" style="min-height: 200px;"></div>
+                <div class="modal-footer border-top bg-body-tertiary">
+                    <div class="w-100 position-relative pb-2">
+                        <textarea id="newCommentText" class="form-control bg-body border-secondary shadow-none pe-5" rows="2" maxlength="150" placeholder="Add a Comment..."></textarea>
+                        <button class="btn btn-primary position-absolute rounded-circle shadow-sm" style="bottom: 12px; right: 10px; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" onclick="submitComment()"><i class="fas fa-arrow-up"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editCommentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-edit text-primary me-2"></i>Edit Comment</h6>
+                    <textarea id="editCommentTextInput" class="form-control bg-body-secondary border-0 shadow-none mb-3" rows="3" maxlength="150"></textarea>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary w-50 rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary w-50 rounded-pill fw-bold" onclick="executeEditComment()">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteCommentModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-trash-alt text-danger fa-3x mb-3"></i>
+                    <h5 class="fw-bold mb-3">Delete Comment?</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary w-50 rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-danger w-50 rounded-pill fw-bold" onclick="executeDeleteComment()">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="shareModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold"><i class="fas fa-share-nodes text-primary me-2"></i>Share Article</h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4 text-center d-flex justify-content-between align-items-center flex-nowrap" id="shareButtonsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="explanationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom"><h5 class="modal-title fw-bold"><i class="fas fa-brain text-primary me-2"></i><span data-i18n="aiReport">AI Analysis Report</span></h5><button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" id="explanationIconDisplay" style="font-size: 3rem;"></div>
+                    <h4 class="fw-bold mb-3" id="explanationTitle"></h4>
+                    <p id="explanationText" class="text-muted" style="font-size: 1.1rem; line-height: 1.6; text-align: left;"></p>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold mt-3" data-bs-dismiss="modal" data-i18n="closeReport">Close Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="aboutUsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-body border-0 shadow-lg">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-info-circle text-info me-2"></i><span data-i18n="aboutUs">About Us</span></h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-shield-alt text-primary fa-4x mb-3"></i>
+                    <h4 class="fw-bold mb-3">Empowering Truth with AI</h4>
+                    <p class="text-muted" style="font-size: 1.05rem; line-height: 1.6;">
+                        Welcome to the <strong>Fake News Detector</strong>! Our mission is to help you navigate the digital world safely. We use advanced Artificial Intelligence to analyze news articles and figure out if they are real or fabricated.<br><br>
+                        Whether you are reading global headlines or checking local updates, we want to give you the power to spot misinformation instantly. Join us in the fight for the truth!
+                    </p>
+                    <button class="btn btn-info w-100 rounded-pill fw-bold text-dark mt-3" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
