@@ -28,7 +28,18 @@ To ensure a high-quality user experience and model reliability, I executed a com
 *   **UI/UX Validation:** Conducted cross-browser testing to ensure the interactive 3D charts and responsive design remained consistent across different screen sizes.
 *   **Security Testing:** Validated that sensitive information (like email credentials) is handled via environment variables and excluded from version control for security.
 *   **Defect Tracking:** Documented and resolved UI bugs related to real-time data refreshing, ensuring a seamless flow for the end user.
-  
+
+### 📋 Manual Test Case Results
+I performed the following test cases to ensure the application meets professional standards:
+
+| Test ID | Feature | Test Description | Expected Result | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| TC-01 | Authentication | Attempt login with incorrect credentials | System displays "Invalid Username/Password" error | ✅ Pass |
+| TC-02 | AI Analysis | Input known "Fake News" text from dataset | Model returns "Fake" with an accuracy score above 80% | ✅ Pass |
+| TC-03 | Live News | Click "Fetch News" button | System fetches 10+ recent headlines via RSS in < 2 seconds | ✅ Pass |
+| TC-04 | 3D Visualization | Hover over result pie chart | Interactive labels display specific percentage data | ✅ Pass |
+| TC-05 | Database | Check scan history after analysis | Entry is successfully saved in SQLite with correct timestamp | ✅ Pass |
+
 ## 🛠️ How to Run Locally
 1. Clone this repository: git clone [https://github.com/jenilsavaj14-source/Fake-News-Detector.git](https://github.com/jenilsavaj14-source/Fake-News-Detector.git)
 2. Install dependencies: pip install -r requirements.txt
